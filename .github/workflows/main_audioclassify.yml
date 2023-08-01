@@ -60,4 +60,4 @@ jobs:
         with:
           app-name: 'audioclassify'
           slot-name: 'Production'
-          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_F34CC0794DD943B5B83776EEB9E83079 }}
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_9FCCCC1DCBCF491A93BD9BE0D4356C72 }}
