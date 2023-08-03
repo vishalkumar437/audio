@@ -1,4 +1,4 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -6,16 +6,7 @@
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" crossorigin="anonymous">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-fileinput/5.0.9/css/fileinput.min.css" media="all" rel="stylesheet" type="text/css" />
   <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.5.0/css/all.css" crossorigin="anonymous">
-  <script src="https://code.jquery.com/jquery-3.3.1.min.js" crossorigin="anonymous"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-fileinput/5.0.9/js/plugins/piexif.min.js" type="text/javascript"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-fileinput/5.0.9/js/plugins/sortable.min.js" type="text/javascript"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
-  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-fileinput/5.0.9/js/fileinput.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-fileinput/5.0.9/themes/fas/theme.min.js"></script>
-  <script src="https://unpkg.com/wavesurfer.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/wavesurfer.js/2.0.4/plugin/wavesurfer.spectrogram.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@2.8.0"></script>
+  <script src="https://unpkg.com/wavesurfer.js@7/dist/wavesurfer.min.js"></script>
 
   <title>Audio Classification</title>
 </head>
@@ -28,8 +19,9 @@
         <p class="lead">Upload a .wav file, and the Convolutional Neural Network model will classify it into one of ten categories.</p>
       </div>
     </div>
-    <form action="" method="post" enctype="multipart/form-data">
-      <input id="input-b1" name="input-b1" type="file" class="file" data-browse-on-zone-click="true">
+    <form action="/" method="post" enctype="multipart/form-data">
+      <input id="file" name="input-b1" type="file" class="file" data-browse-on-zone-click="true">
+      <input type="submit" value="Upload" class="btn btn-primary" style="margin-top: 10px;">
     </form>
   </div>
   <p style="margin-bottom:2cm;"></p>
@@ -43,91 +35,57 @@
           <tr class="table-active">
             <th scope="col">Waveform</th>
             <th scope="col">Predict</th>
-            <th scope="col">Visualization</th>
           </tr>
           <tr>
             <td style="width:40vw"> 
               <div id="waveform"></div>
               <div id="wave-spectrogram"></div>
-              <br>
-              <button class="btn btn-primary" onclick="wavesurfer.playPause()">Play audio</button>
+      </div>
             </td>
             <td style="width: 20vw">
               <pre id="labelOutput">{{ labels }}</pre>
             </td>
-            <td style="width: 40vw">
-              <canvas id="myChart" width="100%" height="50%"></canvas>
-            </td>
           </tr>
         </table> 
-      </div>
+        
     </div>
   </div>
 
+  <!-- Separate chart container -->
+  <div style="width: 50%; margin: auto;">
+    <canvas id="myChart"></canvas>
+  </div>
+
   <script>
-    function format(s) {
-      s = JSON.stringify(s);
-      s = s.replaceAll("{", "<br>    ");
-      s = s.replaceAll("}", "<br>");
-      return s;
-    }
-
+    // Initialize WaveSurfer
     var wavesurfer = WaveSurfer.create({
-      container: '#waveform',
-      waveColor: '#007bff',
-      plugins: [
-        WaveSurfer.spectrogram.create({
-          wavesurfer: wavesurfer,
-          container: "#wave-spectrogram",
-          fftSamples: 512,
-          labels: true
-        })
-      ]
+        container: '#waveform'
     });
 
-    wavesurfer.load('{{ audiosource }}');
+    // Once the user loads a file in the fileinput, the file should be loaded into waveform
+    document.getElementById("file").addEventListener('change', function(e){
+        var file = this.files[0];
 
-    var ctx = document.getElementById('myChart').getContext('2d');
-    data = JSON.parse(document.getElementById("labelOutput").innerHTML.replaceAll("'", '"'));
-    document.getElementById("labelOutput").innerHTML = JSON.stringify(data, undefined, 2);
-    var chart = new Chart(ctx, {
-      type: 'bar',
-      data: {
-        labels: Object.keys(data),
-        datasets: [{
-          label: 'Model Prediction',
-          backgroundColor: '#007bff',
-          data: Object.values(data)
-        }]
-      },
-      options: {
-        scales: {
-          yAxes: [{
-            scaleLabel: {
-              display: true,
-              labelString: 'Confidence',
-            },
-            type: 'logarithmic',
-            position: 'left',
-            ticks: {
-              min: 0, // minimum tick
-              max: 1, // maximum tick
-              callback: function (value, index, values) {
-                return Number(value.toString()); // pass tick values as a string into Number function
-              }
-            },
-            afterBuildTicks: function (chartObj) { // Build ticks labelling as per your need
-              chartObj.ticks = [];
-              chartObj.ticks.push(0.00001);
-              chartObj.ticks.push(0.0001);
-              chartObj.ticks.push(0.001);
-              chartObj.ticks.push(0.1);
-              chartObj.ticks.push(1);
-            }
-          }]
+        if (file) {
+            var reader = new FileReader();
+
+            reader.onload = function (evt) {
+                // Create a Blob from the result of the FileReader
+                var blob = new Blob([evt.target.result]);
+
+                // Load the blob into Wavesurfer
+                wavesurfer.loadBlob(blob);
+            };
+
+            reader.onerror = function (evt) {
+                console.error("An error occurred reading the file: ", evt);
+            };
+
+            // Read File as an ArrayBuffer
+            reader.readAsArrayBuffer(file);
         }
-      }
-    });
-  </script>
+    }, false);
+</script>
+
 </body>
 </html>
